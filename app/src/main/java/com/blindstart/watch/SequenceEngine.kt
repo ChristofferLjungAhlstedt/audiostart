@@ -115,6 +115,11 @@ class SequenceEngine(private val listener: SequenceListener) {
             listener.onAnnounce("Sync is only available while the countdown is running.")
             return
         }
+        remaining = if (remaining > 0) {
+            ((remaining - 1) / 60) * 60
+        } else {
+            0
+        }
         remaining = (remaining / 60) * 60
         listener.onTimeUpdated(remaining, counting = false)
         listener.onAnnounce("Synced. " + describeWhole(remaining))
