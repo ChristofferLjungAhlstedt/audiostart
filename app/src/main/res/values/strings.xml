@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Blind Start Watch</string>
+    <string name="status_content_description">Current status</string>
+    <string name="btn_start_stop">Start/Stop</string>
+    <string name="btn_sync">Sync</string>
+    <string name="btn_prog">Prog</string>
+    <string name="btn_clear">Clear</string>
+    <string name="btn_mode">Mode</string>
 </resources>
