@@ -107,12 +107,7 @@ class SequenceEngine(private val listener: SequenceListener) {
 
     /** Long press: fully stop and return to standby, discarding progress, from any phase. */
     fun onStartStopLongPress() {
-        if (phase == Phase.STANDBY) return
-        handler.removeCallbacks(tickRunnable)
-        progAddCount = 0
-        resetToStandby()
-        listener.onConfigChanged(currentModeSummary())
-        listener.onAnnounce("Reset. " + describeWhole(remaining))
+        onReset()
     }
 
     /**
@@ -122,7 +117,11 @@ class SequenceEngine(private val listener: SequenceListener) {
      * resumes it - pressing Sync is reacting to a real committee-boat signal.
      */
     fun onSync() {
-        if (phase != Phase.COUNTDOWN) {
+
+        if (phase == Phase.COUNTUP) {
+            onReset();
+            return
+        } else if (phase != Phase.COUNTDOWN) {
             listener.onAnnounce("Sync is only available while the countdown is running.")
             return
         }
@@ -175,6 +174,15 @@ class SequenceEngine(private val listener: SequenceListener) {
         resetToStandby()
         listener.onConfigChanged(currentModeSummary())
         listener.onAnnounce("Cleared. " + mode.label + ".")
+    }
+
+    fun onReset() {
+        if (phase == Phase.STANDBY) return
+        handler.removeCallbacks(tickRunnable)
+        progAddCount = 0
+        resetToStandby()
+        listener.onConfigChanged(currentModeSummary())
+        listener.onAnnounce("Reset. " + describeWhole(remaining))
     }
 
     fun onMode() {
@@ -247,6 +255,8 @@ class SequenceEngine(private val listener: SequenceListener) {
         phase = Phase.COUNTUP
         listener.onPhaseChanged(phase, isPaused)
         listener.onTimeUpdated(elapsed, counting = true)
+
+
     }
 
     /**
