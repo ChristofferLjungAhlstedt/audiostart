@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity(), SequenceListener {
 
         applyLayoutForPhase(Phase.STANDBY, paused = false)
         updateModeLabel()
-        speech.announce("Hello. This is a test.")
 
     }
 
