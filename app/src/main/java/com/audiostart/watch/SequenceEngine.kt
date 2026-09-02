@@ -45,9 +45,6 @@ class SequenceEngine(private val listener: SequenceListener) {
     private var elapsed = 0                // whole seconds since start, while phase == COUNTUP
 
     // --- Sub-second timing so pause/resume doesn't lose or add time ---
-    // The elapsedRealtime() at which the *current* whole-second tick started counting down
-    // from. On pause we work out how far into that second we already were and store it; on
-    // resume we only wait out whatever was left of that second, instead of a fresh 1000ms.
     private var lastTickRealtime: Long = 0L
     private var pausedOffsetMs: Long = 0L
 
@@ -58,6 +55,8 @@ class SequenceEngine(private val listener: SequenceListener) {
             when (phase) {
                 Phase.COUNTDOWN -> {
                     tickCountdown()
+                    // tickCountdown() may have switched phase to COUNTUP (start reached) - either
+                    // way, schedule exactly one next tick here, and nowhere else.
                     if (!isPaused) handler.postDelayed(this, 1000)
                 }
                 Phase.COUNTUP -> {
@@ -95,13 +94,12 @@ class SequenceEngine(private val listener: SequenceListener) {
                 if (isPaused) {
                     isPaused = false
                     listener.onPhaseChanged(phase, isPaused)
-                    val timeText = if (phase == Phase.COUNTDOWN) describeWhole(remaining) else describeWhole(elapsed)
-                    listener.onAnnounce("Resumed. $timeText")
+                    listener.onAnnounce("Resumed. " + currentTimeDescription())
                     resumeTickFromPausedOffset()
                 } else {
                     pauseTicking()
                     listener.onPhaseChanged(phase, isPaused)
-                    listener.onAnnounce("Paused.")
+                    listener.onAnnounce("Paused. " + currentTimeDescription())
                 }
             }
         }
@@ -119,10 +117,9 @@ class SequenceEngine(private val listener: SequenceListener) {
 
     /**
      * Snaps down to the whole minute mark already passed - e.g. 4:55 remaining becomes 4:00.
-     * If the countdown was paused, Sync also resumes it: pressing Sync is reacting to a real
-     * committee-boat signal, so it doesn't make sense to sync a still-frozen clock. Since Sync
-     * always lands exactly on a whole-minute boundary, the resumed tick starts a fresh full
-     * second rather than needing a sub-second offset.
+     * If that lands exactly on the start (0:00), this fires the start signal immediately
+     * instead of leaving the countdown stuck at zero. If the countdown was paused, Sync also
+     * resumes it - pressing Sync is reacting to a real committee-boat signal.
      */
     fun onSync() {
         if (phase != Phase.COUNTDOWN) {
@@ -136,14 +133,24 @@ class SequenceEngine(private val listener: SequenceListener) {
             0
         }
 
+        // Cancel whatever tick was already pending (running or paused-and-about-to-resume) -
+        // we're about to schedule fresh ticking below, and must not end up with two.
+        handler.removeCallbacks(tickRunnable)
+
+        if (remaining <= 0) {
+            triggerStartSignal()
+            startFreshSecondTick()
+            return
+        }
+
         listener.onTimeUpdated(remaining, counting = false)
 
         val wasPaused = isPaused
         if (wasPaused) {
             isPaused = false
-            listener.onPhaseChanged(phase, false)
-            startFreshSecondTick()
+            listener.onPhaseChanged(phase, isPaused)
         }
+        startFreshSecondTick()
 
         val announcement = if (wasPaused) "Synced and resumed. " else "Synced. "
         listener.onAnnounce(announcement + describeWhole(remaining))
@@ -193,6 +200,10 @@ class SequenceEngine(private val listener: SequenceListener) {
 
     private fun currentDuration(): Int = mode.seconds * (1 + progAddCount)
 
+    private fun currentTimeDescription(): String =
+        if (phase == Phase.COUNTDOWN) describeWhole(remaining) + " remaining"
+        else "Elapsed " + describeWhole(elapsed)
+
     private fun resetToStandby() {
         remaining = currentDuration()
         elapsed = 0
@@ -226,6 +237,19 @@ class SequenceEngine(private val listener: SequenceListener) {
     }
 
     /**
+     * Fires the start signal: beep, switch to count-up, reset elapsed to zero. Does NOT
+     * schedule the next tick itself - every caller is responsible for scheduling exactly once,
+     * after calling this, to avoid double-ticking.
+     */
+    private fun triggerStartSignal() {
+        listener.onBeep()
+        elapsed = 0
+        phase = Phase.COUNTUP
+        listener.onPhaseChanged(phase, isPaused)
+        listener.onTimeUpdated(elapsed, counting = true)
+    }
+
+    /**
      * Called once per whole second while counting down. Implements the announcement schedule:
      *
      *  R > 60  and R % 60 in 1..5   -> speak bare digit (5,4,3,2,1) - approach to a whole minute
@@ -242,12 +266,7 @@ class SequenceEngine(private val listener: SequenceListener) {
         if (r < 0) return
 
         if (r == 0) {
-            listener.onBeep()
-            elapsed = 0
-            phase = Phase.COUNTUP
-            listener.onPhaseChanged(phase, isPaused)
-            listener.onTimeUpdated(elapsed, counting = true)
-            handler.postDelayed(tickRunnable, 1000)
+            triggerStartSignal()
             return
         }
 
@@ -269,7 +288,8 @@ class SequenceEngine(private val listener: SequenceListener) {
                     listener.onSpeak("$r seconds")
                 }
             }
-            r in 1..30 -> {
+
+            else -> {
                 listener.onSpeak(r.toString())
             }
         }
