@@ -10,4 +10,8 @@
     <color name="btn_prog">#EF6C00</color>
     <color name="btn_clear">#C62828</color>
     <color name="btn_mode">#6A1B9A</color>
+
+    <!-- Counting up or down color -->
+    <color name="text_countdown">#FFFFFF</color>
+    <color name="text_countup">#FFC107</color>
 </resources>

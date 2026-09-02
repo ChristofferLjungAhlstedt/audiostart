@@ -16,6 +16,8 @@ class MainActivity : AppCompatActivity(), SequenceListener {
     private lateinit var txtStatus: TextView
     private lateinit var txtMode: TextView
 
+    private lateinit var txtPhaseLabel: TextView
+
     private lateinit var btnStartStop: Button
     private lateinit var btnSync: Button
     private lateinit var btnProg: Button
@@ -35,6 +37,7 @@ class MainActivity : AppCompatActivity(), SequenceListener {
         // immediately reports the initial time via the SequenceListener callbacks below.
         txtStatus = findViewById(R.id.txtStatus)
         txtMode = findViewById(R.id.txtMode)
+        txtPhaseLabel = findViewById(R.id.txtPhaseLabel)
 
         btnStartStop = findViewById(R.id.btnStartStop)
         btnSync = findViewById(R.id.btnSync)
@@ -62,11 +65,12 @@ class MainActivity : AppCompatActivity(), SequenceListener {
             true
         }
         wireButton(btnSync, "") { engine.onSync() }
-        wireButton(btnProg, "Prog") { engine.onProg() }
-        wireButton(btnClear, "Clear") { engine.onClear() }
-        wireButton(btnMode, "Mode") { engine.onMode() }
+        wireButton(btnProg, "") { engine.onProg() }
+        wireButton(btnClear, "") { engine.onClear() }
+        wireButton(btnMode, "") { engine.onMode() }
 
         applyLayoutForPhase(Phase.STANDBY, paused = false)
+        updatePhaseIndicator(Phase.STANDBY, paused = false)
         updateModeLabel()
 
     }
@@ -128,11 +132,24 @@ class MainActivity : AppCompatActivity(), SequenceListener {
     override fun onPhaseChanged(phase: Phase, paused: Boolean) {
         runOnUiThread {
             applyLayoutForPhase(phase, paused)
+            updatePhaseIndicator(phase, paused)
         }
     }
 
     override fun onConfigChanged(modeSummary: String) {
         runOnUiThread { txtMode.text = modeSummary }
+    }
+
+    private fun updatePhaseIndicator(phase: Phase, paused: Boolean) {
+        val (labelRes, colorRes) = when (phase) {
+            Phase.STANDBY -> R.string.phase_standby to R.color.text_white
+            Phase.COUNTDOWN -> (if (paused) R.string.phase_countdown_paused else R.string.phase_countdown) to R.color.text_countdown
+            Phase.COUNTUP -> (if (paused) R.string.phase_countup_paused else R.string.phase_countup) to R.color.text_countup
+        }
+        txtPhaseLabel.setText(labelRes)
+        val color = androidx.core.content.ContextCompat.getColor(this, colorRes)
+        txtPhaseLabel.setTextColor(color)
+        txtStatus.setTextColor(color)
     }
 
     override fun onTimeUpdated(displaySeconds: Int, counting: Boolean) {

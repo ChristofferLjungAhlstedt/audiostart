@@ -7,4 +7,10 @@
     <string name="btn_prog">Prog</string>
     <string name="btn_clear">Clear</string>
     <string name="btn_mode">Mode</string>
+
+    <string name="phase_standby">Ready</string>
+    <string name="phase_countdown">Counting down to start</string>
+    <string name="phase_countdown_paused">Counting down — Paused</string>
+    <string name="phase_countup">Counting up — race started</string>
+    <string name="phase_countup_paused">Counting up — Paused</string>
 </resources>

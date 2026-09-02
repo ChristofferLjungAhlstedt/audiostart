@@ -7,6 +7,17 @@
     android:background="@color/background_black"
     android:padding="12dp">
 
+    <TextView
+        android:id="@+id/txtPhaseLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/text_white"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp"
+        android:text="@string/phase_standby" />
+
     <!-- Large visual time / status readout, useful for low-vision users and sighted helpers.
          Auto-sizes to fill however much vertical space is currently allocated to it, so it
          gets dramatically bigger once the other buttons are hidden while actively counting. -->
