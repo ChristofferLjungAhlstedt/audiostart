@@ -120,7 +120,6 @@ class SequenceEngine(private val listener: SequenceListener) {
         } else {
             0
         }
-        remaining = (remaining / 60) * 60
         listener.onTimeUpdated(remaining, counting = false)
         listener.onAnnounce("Synced. " + describeWhole(remaining))
     }
