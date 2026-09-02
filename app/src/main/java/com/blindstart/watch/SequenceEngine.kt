@@ -1,4 +1,4 @@
-package com.blindstart.watch
+package com.audiostart.watch
 
 import android.os.Handler
 import android.os.Looper

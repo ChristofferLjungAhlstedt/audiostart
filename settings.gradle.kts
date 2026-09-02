@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BlindStartWatch"
+rootProject.name = "AudioStartWatch"
 include(":app")

@@ -1,4 +1,4 @@
-package com.blindstart.watch
+package com.audiostart.watch
 
 import android.os.Bundle
 import android.view.HapticFeedbackConstants

@@ -1,4 +1,4 @@
-# Blind Start Watch
+# Audio Start Watch
 
 An Android sailing race start-sequence timer, built for blind and visually
 impaired sailors. It replicates the core functionality of an Optimum Time
@@ -62,7 +62,7 @@ This is a standard Android Studio (Kotlin) project.
 2. Let Gradle sync.
 3. Build > Run, or from a terminal: `./gradlew assembleDebug`.
 
-Package name: `com.blindstart.watch`. No special permissions are required
+Package name: `com.audiostart.watch`. No special permissions are required
 beyond `WAKE_LOCK` (keeps the screen on during a countdown) and a `<queries>`
 declaration for `android.intent.action.TTS_SERVICE`, which Android requires
 on API 30+ for the app to see installed text-to-speech engines at all.

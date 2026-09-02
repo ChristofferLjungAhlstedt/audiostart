@@ -1,4 +1,4 @@
-package com.blindstart.watch
+package com.audiostart.watch
 
 import android.content.ActivityNotFoundException
 import android.content.Context

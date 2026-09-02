@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.blindstart.watch"
+    namespace = "com.audiostart.watch"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.blindstart.watch"
+        applicationId = "com.audiostart.watch"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
