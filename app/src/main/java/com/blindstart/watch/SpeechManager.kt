@@ -30,7 +30,6 @@ class SpeechManager(private val context: Context) : TextToSpeech.OnInitListener 
 
     private var tts: TextToSpeech? = null
     private var ready = false
-    private var explicitEngineRetryDone = false
     private val pendingBeforeReady = mutableListOf<Pair<String, Boolean>>()
 
     init {
@@ -62,12 +61,12 @@ class SpeechManager(private val context: Context) : TextToSpeech.OnInitListener 
         }
 
 
-        val localeUsable = applyUsableLocale()
+        val localeUsable = applyUsableVoice()
 
         Log.d(
             TAG,
             "locale=${
-                tts?.language
+                tts?.voice?.locale
             }, voice=${tts?.voice?.name}, voices=${tts?.voices?.size}, usable=$localeUsable"
         )
 
@@ -130,16 +129,28 @@ class SpeechManager(private val context: Context) : TextToSpeech.OnInitListener 
     }
 
     /** Tries the device's default locale first, then falls back to English/US. */
-    private fun applyUsableLocale(): Boolean {
-        val default = Locale.getDefault()
-        val defaultResult = tts?.setLanguage(default) ?: TextToSpeech.LANG_NOT_SUPPORTED
-        if (defaultResult != TextToSpeech.LANG_MISSING_DATA && defaultResult != TextToSpeech.LANG_NOT_SUPPORTED) {
-            return true
+    /** Picks a usable voice via the non-deprecated Voice API: tries the device's default
+     *  locale first, then falls back to English. Skips voices that require a network
+     *  connection or aren't actually downloaded yet, since those would silently fail too. */
+    private fun applyUsableVoice(): Boolean {
+        val engine = tts ?: return false
+        val availableVoices = engine.voices ?: emptySet()
+
+        val candidateLocales = listOf(Locale.getDefault(), Locale.US)
+        for (locale in candidateLocales) {
+            val voice = availableVoices.firstOrNull { voice ->
+                voice.locale.language == locale.language &&
+                        !voice.isNetworkConnectionRequired &&
+                        !voice.features.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED)
+            }
+            if (voice != null && engine.setVoice(voice) == TextToSpeech.SUCCESS) {
+                return true
+            }
         }
 
-        Log.w(TAG, "TTS voice data missing for $default, falling back to English")
-        val fallbackResult = tts?.setLanguage(Locale.US) ?: TextToSpeech.LANG_NOT_SUPPORTED
-        return fallbackResult != TextToSpeech.LANG_MISSING_DATA && fallbackResult != TextToSpeech.LANG_NOT_SUPPORTED
+        // Last resort: whatever the engine considers its default voice.
+        val fallback = engine.defaultVoice
+        return fallback != null && engine.setVoice(fallback) == TextToSpeech.SUCCESS
     }
 
     /** Immediate, interrupting announcement (button names, state changes). */
@@ -173,7 +184,7 @@ class SpeechManager(private val context: Context) : TextToSpeech.OnInitListener 
 
         Log.d(
             TAG,
-            "speak(text=$text, result=$result, ready=$ready, language=${engine.language}, voice=${engine.voice?.name})"
+            "speak(text=$text, result=$result, ready=$ready, language=${engine.voice?.locale}, voice=${engine.voice?.name})"
         )
 
         if (result == TextToSpeech.ERROR) {
