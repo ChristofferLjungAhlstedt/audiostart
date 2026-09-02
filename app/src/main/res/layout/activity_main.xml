@@ -19,6 +19,7 @@
         android:textColor="@color/text_white"
         android:textStyle="bold"
         android:text=""
+        android:maxLines="1"
         app:autoSizeTextType="uniform"
         app:autoSizeMinTextSize="40sp"
         app:autoSizeMaxTextSize="300sp"
