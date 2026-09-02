@@ -131,8 +131,8 @@ class MainActivity : AppCompatActivity(), SequenceListener {
         }
     }
 
-    override fun onConfigChanged() {
-        runOnUiThread { updateModeLabel() }
+    override fun onConfigChanged(modeSummary: String) {
+        runOnUiThread { txtMode.text = modeSummary }
     }
 
     override fun onTimeUpdated(displaySeconds: Int, counting: Boolean) {

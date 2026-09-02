@@ -2,6 +2,7 @@ package com.blindstart.watch
 
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 
 /** STANDBY = idle/configuring. COUNTDOWN = racing down to the start. COUNTUP = elapsed time since start. */
 enum class Phase { STANDBY, COUNTDOWN, COUNTUP }
@@ -18,7 +19,7 @@ enum class SequenceMode(val seconds: Int, val label: String) {
  */
 interface SequenceListener {
     fun onPhaseChanged(phase: Phase, paused: Boolean)
-    fun onConfigChanged()               // mode / prog additions changed - refresh mode label
+    fun onConfigChanged(modeSummary: String)   // mode / prog additions changed - refresh mode label
     fun onTimeUpdated(displaySeconds: Int, counting: Boolean)
     fun onSpeak(text: String)          // queued countdown speech
     fun onAnnounce(text: String)       // immediate/interrupting speech
@@ -40,12 +41,20 @@ class SequenceEngine(private val listener: SequenceListener) {
     // How many extra "Prog" presses have been added on top of the base mode duration.
     private var progAddCount = 0
 
-    private var remaining = mode.seconds   // seconds left until start, while phase == COUNTDOWN
-    private var elapsed = 0                // seconds since start, while phase == COUNTUP
+    private var remaining = mode.seconds   // whole seconds left until start, while phase == COUNTDOWN
+    private var elapsed = 0                // whole seconds since start, while phase == COUNTUP
+
+    // --- Sub-second timing so pause/resume doesn't lose or add time ---
+    // The elapsedRealtime() at which the *current* whole-second tick started counting down
+    // from. On pause we work out how far into that second we already were and store it; on
+    // resume we only wait out whatever was left of that second, instead of a fresh 1000ms.
+    private var lastTickRealtime: Long = 0L
+    private var pausedOffsetMs: Long = 0L
 
     private val tickRunnable = object : Runnable {
         override fun run() {
             if (isPaused) return
+            lastTickRealtime = SystemClock.elapsedRealtime()
             when (phase) {
                 Phase.COUNTDOWN -> {
                     tickCountdown()
@@ -63,7 +72,7 @@ class SequenceEngine(private val listener: SequenceListener) {
 
     init {
         listener.onTimeUpdated(remaining, counting = false)
-        listener.onConfigChanged()
+        listener.onConfigChanged(currentModeSummary())
     }
 
     // ---------------------------------------------------------------------
@@ -80,7 +89,7 @@ class SequenceEngine(private val listener: SequenceListener) {
                 listener.onPhaseChanged(phase, isPaused)
                 listener.onAnnounce("Start. " + describeWhole(remaining))
                 listener.onTimeUpdated(remaining, counting = false)
-                handler.postDelayed(tickRunnable, 1000)
+                startFreshSecondTick()
             }
             Phase.COUNTDOWN, Phase.COUNTUP -> {
                 if (isPaused) {
@@ -88,10 +97,9 @@ class SequenceEngine(private val listener: SequenceListener) {
                     listener.onPhaseChanged(phase, isPaused)
                     val timeText = if (phase == Phase.COUNTDOWN) describeWhole(remaining) else describeWhole(elapsed)
                     listener.onAnnounce("Resumed. $timeText")
-                    handler.postDelayed(tickRunnable, 1000)
+                    resumeTickFromPausedOffset()
                 } else {
-                    isPaused = true
-                    handler.removeCallbacks(tickRunnable)
+                    pauseTicking()
                     listener.onPhaseChanged(phase, isPaused)
                     listener.onAnnounce("Paused.")
                 }
@@ -105,13 +113,16 @@ class SequenceEngine(private val listener: SequenceListener) {
         handler.removeCallbacks(tickRunnable)
         progAddCount = 0
         resetToStandby()
-        listener.onConfigChanged()
+        listener.onConfigChanged(currentModeSummary())
         listener.onAnnounce("Reset. " + describeWhole(remaining))
     }
+
     /**
      * Snaps down to the whole minute mark already passed - e.g. 4:55 remaining becomes 4:00.
      * If the countdown was paused, Sync also resumes it: pressing Sync is reacting to a real
-     * committee-boat signal, so it doesn't make sense to sync a still-frozen clock.
+     * committee-boat signal, so it doesn't make sense to sync a still-frozen clock. Since Sync
+     * always lands exactly on a whole-minute boundary, the resumed tick starts a fresh full
+     * second rather than needing a sub-second offset.
      */
     fun onSync() {
         if (phase != Phase.COUNTDOWN) {
@@ -124,19 +135,19 @@ class SequenceEngine(private val listener: SequenceListener) {
         } else {
             0
         }
+
         listener.onTimeUpdated(remaining, counting = false)
 
         val wasPaused = isPaused
         if (wasPaused) {
             isPaused = false
             listener.onPhaseChanged(phase, false)
-            handler.postDelayed(tickRunnable, 1000)
+            startFreshSecondTick()
         }
 
         val announcement = if (wasPaused) "Synced and resumed. " else "Synced. "
         listener.onAnnounce(announcement + describeWhole(remaining))
     }
-
 
     /** Adds one more block of the current mode's length on top of the standby time. */
     fun onProg() {
@@ -146,7 +157,7 @@ class SequenceEngine(private val listener: SequenceListener) {
         }
         progAddCount++
         remaining = currentDuration()
-        listener.onConfigChanged()
+        listener.onConfigChanged(currentModeSummary())
         listener.onAnnounce("Prog. " + describeWhole(remaining))
         listener.onTimeUpdated(remaining, counting = false)
     }
@@ -155,7 +166,7 @@ class SequenceEngine(private val listener: SequenceListener) {
         handler.removeCallbacks(tickRunnable)
         progAddCount = 0
         resetToStandby()
-        listener.onConfigChanged()
+        listener.onConfigChanged(currentModeSummary())
         listener.onAnnounce("Cleared. " + mode.label + ".")
     }
 
@@ -171,7 +182,7 @@ class SequenceEngine(private val listener: SequenceListener) {
         }
         progAddCount = 0
         remaining = currentDuration()
-        listener.onConfigChanged()
+        listener.onConfigChanged(currentModeSummary())
         listener.onAnnounce("Mode. ${mode.label}.")
         listener.onTimeUpdated(remaining, counting = false)
     }
@@ -186,13 +197,36 @@ class SequenceEngine(private val listener: SequenceListener) {
         remaining = currentDuration()
         elapsed = 0
         isPaused = false
+        pausedOffsetMs = 0L
         phase = Phase.STANDBY
         listener.onPhaseChanged(phase, isPaused)
         listener.onTimeUpdated(remaining, counting = false)
     }
 
+    /** Starts (or restarts, e.g. after Sync) ticking with a full, fresh 1000ms first interval. */
+    private fun startFreshSecondTick() {
+        handler.removeCallbacks(tickRunnable)
+        lastTickRealtime = SystemClock.elapsedRealtime()
+        handler.postDelayed(tickRunnable, 1000)
+    }
+
+    /** Freezes the countdown/count-up, remembering how far into the current second we were. */
+    private fun pauseTicking() {
+        isPaused = true
+        val elapsedInSecond = SystemClock.elapsedRealtime() - lastTickRealtime
+        pausedOffsetMs = elapsedInSecond.coerceIn(0L, 999L)
+        handler.removeCallbacks(tickRunnable)
+    }
+
+    /** Resumes ticking, waiting only whatever was left of the second that was in progress when paused. */
+    private fun resumeTickFromPausedOffset() {
+        val delay = (1000L - pausedOffsetMs).coerceIn(1L, 1000L)
+        lastTickRealtime = SystemClock.elapsedRealtime() - pausedOffsetMs
+        handler.postDelayed(tickRunnable, delay)
+    }
+
     /**
-     * Called once per second while counting down. Implements the announcement schedule:
+     * Called once per whole second while counting down. Implements the announcement schedule:
      *
      *  R > 60  and R % 60 in 1..5   -> speak bare digit (5,4,3,2,1) - approach to a whole minute
      *  R > 60  and R % 60 == 0      -> speak "<n> minutes" - arriving at a whole minute mark
