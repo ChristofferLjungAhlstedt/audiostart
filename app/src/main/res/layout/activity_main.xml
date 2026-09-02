@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_black"
+    android:padding="12dp">
+
+    <!-- Large visual time / status readout, useful for low-vision users and sighted helpers.
+         Auto-sizes to fill however much vertical space is currently allocated to it, so it
+         gets dramatically bigger once the other buttons are hidden while actively counting. -->
+    <TextView
+        android:id="@+id/txtStatus"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.1"
+        android:gravity="center"
+        android:textColor="@color/text_white"
+        android:textStyle="bold"
+        android:text="5:00"
+        app:autoSizeTextType="uniform"
+        app:autoSizeMinTextSize="40sp"
+        app:autoSizeMaxTextSize="300sp"
+        app:autoSizeStepGranularity="4sp"
+        android:contentDescription="Current status" />
+
+    <TextView
+        android:id="@+id/txtMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/text_white"
+        android:textSize="20sp"
+        android:paddingBottom="12dp"
+        android:text="Mode: 5 minutes" />
+
+    <!-- Start / Stop -->
+    <Button
+        android:id="@+id/btnStartStop"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="10dp"
+        android:backgroundTint="@color/btn_start_stop_go"
+        android:text="START / STOP"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_white" />
+
+    <!-- Sync -->
+    <Button
+        android:id="@+id/btnSync"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="10dp"
+        android:backgroundTint="@color/btn_sync"
+        android:text="SYNC"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_white" />
+
+    <!-- Prog -->
+    <Button
+        android:id="@+id/btnProg"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="10dp"
+        android:backgroundTint="@color/btn_prog"
+        android:text="PROG"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_white" />
+
+    <!-- Clear -->
+    <Button
+        android:id="@+id/btnClear"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="10dp"
+        android:backgroundTint="@color/btn_clear"
+        android:text="CLEAR"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_white" />
+
+    <!-- Mode -->
+    <Button
+        android:id="@+id/btnMode"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:backgroundTint="@color/btn_mode"
+        android:text="MODE"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_white" />
+
+</LinearLayout>

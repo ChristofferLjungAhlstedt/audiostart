@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background_black">#000000</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Distinct, high-contrast colors per function -->
+    <color name="btn_start_stop_go">#1B8A3B</color>
+    <color name="btn_start_stop_stop">#B71C1C</color>
+    <color name="btn_sync">#1565C0</color>
+    <color name="btn_prog">#EF6C00</color>
+    <color name="btn_clear">#C62828</color>
+    <color name="btn_mode">#6A1B9A</color>
+</resources>
