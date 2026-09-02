@@ -108,21 +108,35 @@ class SequenceEngine(private val listener: SequenceListener) {
         listener.onConfigChanged()
         listener.onAnnounce("Reset. " + describeWhole(remaining))
     }
-
-    /** Snaps down to the whole minute mark already passed - e.g. 4:55 remaining becomes 4:00. */
+    /**
+     * Snaps down to the whole minute mark already passed - e.g. 4:55 remaining becomes 4:00.
+     * If the countdown was paused, Sync also resumes it: pressing Sync is reacting to a real
+     * committee-boat signal, so it doesn't make sense to sync a still-frozen clock.
+     */
     fun onSync() {
         if (phase != Phase.COUNTDOWN) {
             listener.onAnnounce("Sync is only available while the countdown is running.")
             return
         }
+
         remaining = if (remaining > 0) {
             ((remaining - 1) / 60) * 60
         } else {
             0
         }
         listener.onTimeUpdated(remaining, counting = false)
-        listener.onAnnounce("Synced. " + describeWhole(remaining))
+
+        val wasPaused = isPaused
+        if (wasPaused) {
+            isPaused = false
+            listener.onPhaseChanged(phase, false)
+            handler.postDelayed(tickRunnable, 1000)
+        }
+
+        val announcement = if (wasPaused) "Synced and resumed. " else "Synced. "
+        listener.onAnnounce(announcement + describeWhole(remaining))
     }
+
 
     /** Adds one more block of the current mode's length on top of the standby time. */
     fun onProg() {

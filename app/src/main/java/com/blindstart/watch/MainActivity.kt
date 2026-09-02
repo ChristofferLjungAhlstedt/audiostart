@@ -54,14 +54,14 @@ class MainActivity : AppCompatActivity(), SequenceListener {
         // is actually assigned.
         engine = SequenceEngine(this)
 
-        wireButton(btnStartStop, "Start Stop") { engine.onStartStop() }
+        wireButton(btnStartStop, "") { engine.onStartStop() }
         btnStartStop.setOnLongClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             speech.announce("Reset")
             engine.onStartStopLongPress()
             true
         }
-        wireButton(btnSync, "Sync") { engine.onSync() }
+        wireButton(btnSync, "") { engine.onSync() }
         wireButton(btnProg, "Prog") { engine.onProg() }
         wireButton(btnClear, "Clear") { engine.onClear() }
         wireButton(btnMode, "Mode") { engine.onMode() }
