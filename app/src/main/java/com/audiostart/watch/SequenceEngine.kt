@@ -270,37 +270,43 @@ class SequenceEngine(private val listener: SequenceListener) {
      *  R == 0                       -> loud beep only, then switch to count-up
      */
     private fun tickCountdown() {
-        remaining--
-        val r = remaining
+        val secondsRemaining = --remaining
 
-        if (r < 0) return
+        if (secondsRemaining < 0) return
 
-        if (r == 0) {
+        if (secondsRemaining == 0) {
             triggerStartSignal()
             return
         }
 
-        listener.onTimeUpdated(r, counting = false)
+        listener.onTimeUpdated(secondsRemaining, counting = false)
 
         when {
-            r > 60 -> {
-                val rem60 = r % 60
+            secondsRemaining > 60 -> {
+                val remainingSeconds = secondsRemaining % 60
+
                 when {
-                    rem60 in 1..5 -> listener.onSpeak(rem60.toString())
-                    rem60 == 0 -> listener.onSpeak(describeWhole(r))
-                    r % 10 == 0 -> listener.onSpeak(describeMinSec(r))
+                    remainingSeconds in 1..5 ->
+                        listener.onSpeak(remainingSeconds.toString())
+
+                    remainingSeconds == 0 ->
+                        listener.onSpeak(describeWhole(secondsRemaining))
+
+                    secondsRemaining % 10 == 0 ->
+                        listener.onSpeak(describeMinSec(secondsRemaining))
                 }
             }
-            r in 31..60 -> {
-                if (r == 60) {
-                    listener.onSpeak(describeWhole(r))
-                } else if (r % 5 == 0) {
-                    listener.onSpeak("$r")
+
+            secondsRemaining in 31..60 -> {
+                if (secondsRemaining == 60) {
+                    listener.onSpeak(describeWhole(secondsRemaining))
+                } else if (secondsRemaining % 5 == 0) {
+                    listener.onSpeak(secondsRemaining.toString())
                 }
             }
 
             else -> {
-                listener.onSpeak(r.toString())
+                listener.onSpeak(secondsRemaining.toString())
             }
         }
     }
