@@ -147,7 +147,7 @@ class SequenceEngine(private val listener: SequenceListener) {
         val wasPaused = isPaused
         if (wasPaused) {
             isPaused = false
-            listener.onPhaseChanged(phase, isPaused)
+            listener.onPhaseChanged(phase, false)
         }
         startFreshSecondTick()
 
