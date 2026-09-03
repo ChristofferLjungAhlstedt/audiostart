@@ -295,7 +295,7 @@ class SequenceEngine(private val listener: SequenceListener) {
                 if (r == 60) {
                     listener.onSpeak(describeWhole(r))
                 } else if (r % 5 == 0) {
-                    listener.onSpeak("$r seconds")
+                    listener.onSpeak("$r")
                 }
             }
 
@@ -308,12 +308,16 @@ class SequenceEngine(private val listener: SequenceListener) {
     private fun describeWhole(totalSeconds: Int): String {
         val mins = totalSeconds / 60
         val secs = totalSeconds % 60
+        val verbose = if (secs == 0) {
+            if (mins == 1) "minute" else "minutes"
+        } else ""
+
         val minPart = when (mins) {
             0 -> ""
-            1 -> "1 minute"
-            else -> "$mins minutes"
+            1 -> "1 $verbose"
+            else -> "$mins $verbose"
         }
-        val secPart = if (secs == 0) "" else "$secs seconds"
+        val secPart = if (secs == 0) "" else "$secs" // Add something after else variable to make it talk more
         return listOf(minPart, secPart).filter { it.isNotEmpty() }.joinToString(" ")
     }
 
