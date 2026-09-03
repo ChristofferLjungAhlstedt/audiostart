@@ -318,8 +318,6 @@ class SequenceEngine(private val listener: SequenceListener) {
 
     private fun describeMinSec(totalSeconds: Int): String = describeWhole(totalSeconds)
 
-    fun currentDisplaySeconds(): Int = if (phase == Phase.COUNTUP) elapsed else remaining
-
     fun currentModeSummary(): String =
         if (progAddCount > 0) "Mode: ${mode.label} +$progAddCount (${currentDuration() / 60} min)"
         else "Mode: ${mode.label}"
