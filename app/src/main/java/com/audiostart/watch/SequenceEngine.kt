@@ -306,19 +306,14 @@ class SequenceEngine(private val listener: SequenceListener) {
     }
 
     private fun describeWhole(totalSeconds: Int): String {
-        val mins = totalSeconds / 60
-        val secs = totalSeconds % 60
-        val verbose = if (secs == 0) {
-            if (mins == 1) "minute" else "minutes"
-        } else ""
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
 
-        val minPart = when (mins) {
-            0 -> ""
-            1 -> "1 $verbose"
-            else -> "$mins $verbose"
+        return if (seconds == 0) {
+            "$minutes ${if (minutes == 1) "minute" else "minutes"}"
+        } else {
+            "%d:%02d".format(minutes, seconds)
         }
-        val secPart = if (secs == 0) "" else "$secs" // Add something after else variable to make it talk more
-        return listOf(minPart, secPart).filter { it.isNotEmpty() }.joinToString(" ")
     }
 
     private fun describeMinSec(totalSeconds: Int): String = describeWhole(totalSeconds)
