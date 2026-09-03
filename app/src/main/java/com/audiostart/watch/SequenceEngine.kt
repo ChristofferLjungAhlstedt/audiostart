@@ -284,16 +284,21 @@ class SequenceEngine(private val listener: SequenceListener) {
         when {
             secondsRemaining > 60 -> {
                 val remainingSeconds = secondsRemaining % 60
+                val syncWarning = mode.seconds - 60 
 
                 when {
-                    remainingSeconds in 1..5 ->
+                    remainingSeconds in 1..5 &&
+                            secondsRemaining in syncWarning + 1..syncWarning + 5 -> {
                         listener.onSpeak(remainingSeconds.toString())
+                    }
 
-                    remainingSeconds == 0 ->
+                    remainingSeconds == 0 -> {
                         listener.onSpeak(describeWhole(secondsRemaining))
+                    }
 
-                    secondsRemaining % 10 == 0 ->
+                    secondsRemaining % 10 == 0 -> {
                         listener.onSpeak(describeMinSec(secondsRemaining))
+                    }
                 }
             }
 
