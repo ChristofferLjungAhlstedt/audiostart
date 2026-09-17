@@ -423,7 +423,9 @@ class SequenceEngine(private val listener: SequenceListener) {
             }
 
             secondsRemaining in 1..30 -> {
-                listener.onSpeak(secondsRemaining.toString())
+                // Forcing the TTS to switch to the next number by using onAnnounce
+                // Important that the voice does not drag
+                listener.onAnnounce(secondsRemaining.toString())
             }
         }
     }
